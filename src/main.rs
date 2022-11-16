@@ -29,13 +29,13 @@ async fn subscribe_to_aave_liquidation(web3: &Web3<WebSocket>) {
 
     println!("subscribing to aave liquidation");
 
-    let aaveAddress:Address = Address::from_str("0xCd550E94040cEC1b33589eB99B0E1241Baa75D19").unwrap();
+    let aaveAddress:Address = Address::from_str("0xbd4765210d4167CE2A5b87280D9E8Ee316D5EC7C").unwrap(); //Aave V2 mainnet lendingPoolCollateralManager https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     
     // Filter for liquidation event in aave v2 lendingPool contract
     let filter = FilterBuilder::default()
     .address(vec![aaveAddress])
     .topics(
-        Some(vec![H256::from_str("e413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286").unwrap()]),
+        Some(vec![H256::from_str("e413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286").unwrap()]), // hash of LiquidationCall(address,address,address,uint256,uint256,address,bool)
         None,
         None,
         None,
@@ -43,7 +43,6 @@ async fn subscribe_to_aave_liquidation(web3: &Web3<WebSocket>) {
     .build();
 
     //listen to new blocks and print out the block info
-    // let sub = web3.eth_subscribe().subscribe_logs(filter).await?;
     let sub = web3.eth_subscribe().subscribe_logs(filter).await.unwrap();
 
     sub.for_each(|log| {
