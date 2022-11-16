@@ -3,7 +3,7 @@
 Simple Rust bot monitering all block headers and all liquidation txs on Aave V2. 
 
 # Setup
-1. add ur own RPC endpoint in .env as `END_POINT=wss://eth-mainnet.g.alchemy.com/v2/xxxxxxxxx`
+1. add ur own RPC endpoint in .env as `END_POINT=wss://eth-mainnet.g.alchemy.com/v2/xxxxxxxxx`. Note the current one is a dummy RPC, does not work.
 2. Cargo install
 
 # Run program
