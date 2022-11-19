@@ -1,21 +1,17 @@
 use web3::{
     api::*,
-    types::{U64,Address,H256},
-    contract::{Contract, Options, tokens::Tokenizable},
+    types::{Address,H256},
     futures::{future, StreamExt},
     types::FilterBuilder,
     transports::*,
 };
-use std::str::FromStr;
-use hex_literal::hex;
-use dotenv::dotenv;
-use std::env;
+use std::{str::FromStr, env};
 
 
 #[tokio::main]
 async fn main() -> web3::Result<()> {
-    dotenv().ok();
-    let transport = web3::transports::WebSocket::new(&env::var("END_POINT").unwrap()).await?;
+    println!("{:?}", env::var("END_POINT"));
+    let transport = web3::transports::WebSocket::new(&env::var("END_POINT").unwrap()).await?; //env var defined in project/.cargo/config.toml
     let web3 = web3::Web3::new(transport);
 
     subscribe_to_block_head(&web3).await;
@@ -29,11 +25,11 @@ async fn subscribe_to_aave_liquidation(web3: &Web3<WebSocket>) {
 
     println!("subscribing to aave liquidation");
 
-    let aaveAddress:Address = Address::from_str("0xbd4765210d4167CE2A5b87280D9E8Ee316D5EC7C").unwrap(); //Aave V2 mainnet lendingPoolCollateralManager https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
+    let aave_address:Address = Address::from_str("0xbd4765210d4167CE2A5b87280D9E8Ee316D5EC7C").unwrap(); //Aave V2 mainnet lendingPoolCollateralManager https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
     
     // Filter for liquidation event in aave v2 lendingPool contract
     let filter = FilterBuilder::default()
-    .address(vec![aaveAddress])
+    .address(vec![aave_address])
     .topics(
         Some(vec![H256::from_str("e413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286").unwrap()]), // hash of LiquidationCall(address,address,address,uint256,uint256,address,bool)
         None,
