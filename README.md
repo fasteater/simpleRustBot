@@ -7,8 +7,7 @@ Simple Rust bot monitering all block headers and all liquidation txs on Aave V2.
 2. Cargo install
 
 # Run program
-Option 1 - simply run `Cargo run`   
-Option 2 - `Cargo build` as binary and run locally   
+simply run `Cargo run`   
 
 # Expected Outputs 
 live block headers and any liquidation tx in Aave V2
