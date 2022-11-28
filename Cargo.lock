@@ -1060,6 +1060,7 @@ name = "rustbot"
 version = "0.1.0"
 dependencies = [
  "hex-literal",
+ "serde",
  "tokio",
  "web3",
 ]
