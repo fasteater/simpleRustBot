@@ -58,13 +58,14 @@ async fn main() -> web3::Result<()> {
     // }
 
     //Solution 3 - create a hashmap to store liquidatorAddress => liq_record(times,totalProfit) then loop it to put result back into another vector
-    let mut liq_map:HashMap<Address, (U256,U256)> = HashMap::new();
+    let mut liq_map:HashMap<Address, (U256,i64)> = HashMap::new();
     // println!("{:?}", &liq_log[0]);
 
     let mut current_loop_num = 0;
     for log in liq_log {
         current_loop_num += 1;
-         println!("loop number {:?} of {:?}", current_loop_num, log_length);
+        // println!("{:?}",log);
+        println!("loop number {:?} of {:?}", current_loop_num, log_length);
 
         //reference - aave v2 liquidation event
         //   /**
@@ -99,22 +100,26 @@ async fn main() -> web3::Result<()> {
         let block_id: BlockId = BlockId::from( BlockNumber::from(&log.block_number.unwrap()));
         let block_timestamp = web3.eth().block(block_id).await.unwrap().unwrap().timestamp;
         // println!("block timestampe is {:?}", block_timestamp);
-     
+
+        //get gas cost
+        let gas_cost_usd: U256 = calculate_tx_gas_cost(&web3, log.transaction_hash.unwrap(), block_timestamp).await;
+        println!("gas cost is ${:?}", gas_cost_usd);
+        
         //get collateral value in usd
         let collateral_asset:Address = Address::from(log.topics[1]);
         let liquidation_collateral_amount: U256 = U256::from_str_radix(&data_str[66..130], 16).unwrap();
         let collateral_value_usd = get_asset_value_usd_at_timestamp(collateral_asset,liquidation_collateral_amount, &web3, block_timestamp).await;
-        println!("collateral value in usd {:?}", collateral_value_usd);
+        println!("collateral value ${:?}", collateral_value_usd);
         
         //get debt value in usd
         let debt_to_cover: U256 = U256::from_str_radix(&data_str[2..66], 16).unwrap();
         let debt_asset:Address = Address::from(log.topics[2]);
         let debt_value_usd = get_asset_value_usd_at_timestamp(debt_asset, debt_to_cover, &web3, block_timestamp).await;
-        println!("debt value in usd {:?}", debt_value_usd);
+        println!("debt value ${:?}", debt_value_usd);
 
         //get liquidation profit
-        let liquidation_profit = collateral_value_usd.checked_sub(debt_value_usd).unwrap();
-        println!("liquidation profit in usd {:?}", liquidation_profit); //CONTINUE HERE -> got the results already
+        let liquidation_profit:i64 = i64::from(collateral_value_usd.as_u32()) - i64::from(debt_value_usd.as_u32()) - i64::from(gas_cost_usd.as_u32());
+        println!("liquidation profit ${:?}", liquidation_profit); 
 
         //get liquidator
         let liquidator:Address = Address::from_str(("0x".to_owned() + &data_str[154..194]).as_str()).unwrap();
@@ -123,12 +128,12 @@ async fn main() -> web3::Result<()> {
 
         // let liquidated_collateral_amount = log.data.
         liq_map.entry(liquidator)
-        .and_modify(|liq_record:&mut(U256,U256)| *liq_record = (liq_record.0.checked_add(U256::from(1)).unwrap(), liq_record.1.checked_add(liquidation_profit).unwrap()))
+        .and_modify(|liq_record:&mut(U256,i64)| *liq_record = (liq_record.0.checked_add(U256::from(1)).unwrap(), liq_record.1 + liquidation_profit))
         .or_insert((U256::from(1),liquidation_profit));
     }
 
     //loop the hashmap and put the final resut in a vec and sort it
-    let mut hash_vec:Vec<(Address, (U256,U256))> = Vec::new();
+    let mut hash_vec:Vec<(Address, (U256,i64))> = Vec::new();
 
     for val in liq_map {
         hash_vec.push(val);    
@@ -290,7 +295,7 @@ async fn get_asset_value_usd_at_timestamp(collateral_asset:Address,liquidation_c
     
 }
 
-async fn get_ERC20_asset_decimal(asset:Address, web3:&Web3<WebSocket>) -> U256 {
+async fn get_ERC20_asset_decimal(asset:Address, web3:&Web3<WebSocket>, ) -> U256 {
 
     let token_contract = Contract::from_json(
         web3.eth(),
@@ -302,4 +307,15 @@ async fn get_ERC20_asset_decimal(asset:Address, web3:&Web3<WebSocket>) -> U256 {
 
     // println!("decimal is {:?}", decimal);
     decimal
+}
+
+async fn calculate_tx_gas_cost(web3:&Web3<WebSocket>, tx_hash:H256, block_timestamp:U256 ) -> U256{
+    let tx_receipt = web3.eth().transaction_receipt(tx_hash).await.unwrap().unwrap();
+
+    let gas_cost_wei = tx_receipt.gas_used.unwrap().checked_mul(tx_receipt.effective_gas_price.unwrap()).unwrap();
+
+    let gas_cost_usd= get_asset_value_usd_at_timestamp(Address::from_str("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),gas_cost_wei, &web3, block_timestamp).await;
+    // println!("gas cost for tx {:?} is {:?}", tx_hash, gas_cost_usd);
+    
+    gas_cost_usd
 }
