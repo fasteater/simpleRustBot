@@ -13,7 +13,8 @@ use serde::{Serialize};
 #[tokio::main]
 async fn main() -> web3::Result<()> {
 
-    let transport = web3::transports::WebSocket::new(&env::var("END_POINT").unwrap()).await?; //env var defined in project/.cargo/config.toml
+    // let transport = web3::transports::WebSocket::new(&env::var("END_POINT").unwrap()).await?; //env var defined in project/.cargo/config.toml
+    let transport = web3::transports::Http::new("http://localhost:8545")?; 
     let web3 = web3::Web3::new(transport);
     let aave_address:Address = Address::from_str("0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9").unwrap(); //Aave V2 mainnet lendingPool https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
   
