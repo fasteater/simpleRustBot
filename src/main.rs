@@ -13,8 +13,7 @@ use serde::{Serialize};
 #[tokio::main]
 async fn main() -> web3::Result<()> {
 
-    // let transport = web3::transports::WebSocket::new(&env::var("END_POINT").unwrap()).await?; //env var defined in project/.cargo/config.toml
-    let transport = web3::transports::Http::new("http://localhost:8545")?; 
+    let transport = web3::transports::WebSocket::new(&env::var("END_POINT").unwrap()).await?; //env var defined in project/.cargo/config.toml
     let web3 = web3::Web3::new(transport);
     let aave_address:Address = Address::from_str("0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9").unwrap(); //Aave V2 mainnet lendingPool https://docs.aave.com/developers/v/2.0/deployed-contracts/deployed-contracts
   
@@ -147,46 +146,46 @@ async fn main() -> web3::Result<()> {
     Ok(())
 }
 
-// async fn subscribe_to_aave_liquidation(web3: &Web3<Http>,aave_address:Address) {
+async fn subscribe_to_aave_liquidation(web3: &Web3<WebSocket>,aave_address:Address) {
 
-//     println!("subscribing to aave liquidation");
+    println!("subscribing to aave liquidation");
    
-//     // Filter for liquidation event in aave v2 lendingPool contract
-//     let filter = FilterBuilder::default()
-//     .address(vec![aave_address])
-//     .topics(
-//         Some(vec![H256::from_str("e413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286").unwrap()]), // hash of LiquidationCall(address,address,address,uint256,uint256,address,bool)
-//         None,
-//         None,
-//         None,
-//     )
-//     .build();
+    // Filter for liquidation event in aave v2 lendingPool contract
+    let filter = FilterBuilder::default()
+    .address(vec![aave_address])
+    .topics(
+        Some(vec![H256::from_str("e413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286").unwrap()]), // hash of LiquidationCall(address,address,address,uint256,uint256,address,bool)
+        None,
+        None,
+        None,
+    )
+    .build();
 
-//     //listen to new blocks and print out the block info
-//     let sub = web3.eth_subscribe().subscribe_logs(filter).await.unwrap();
+    //listen to new blocks and print out the block info
+    let sub = web3.eth_subscribe().subscribe_logs(filter).await.unwrap();
 
-//     sub.for_each(|log| {
-//         println!("{:?}", log);
-//         future::ready(())
-//     }).await;
-// }
+    sub.for_each(|log| {
+        println!("{:?}", log);
+        future::ready(())
+    }).await;
+}
 
-// async fn subscribe_to_block_head(web3: &Web3<Http>){
+async fn subscribe_to_block_head(web3: &Web3<WebSocket>){
     
-//     println!("getting to block headers");
+    println!("getting to block headers");
 
-//     //subscribe to new block headers
-//     let sub = web3.eth_subscribe().subscribe_new_heads().await.unwrap();
+    //subscribe to new block headers
+    let sub = web3.eth_subscribe().subscribe_new_heads().await.unwrap();
 
-//     //iterate and print out block headers
-//     sub.for_each(|header|{
-//         println!("got new block hash {:?}", header.unwrap().hash.unwrap());
-//         future::ready(())
-//     }).await;
+    //iterate and print out block headers
+    sub.for_each(|header|{
+        println!("got new block hash {:?}", header.unwrap().hash.unwrap());
+        future::ready(())
+    }).await;
 
-// }
+}
 
-async fn scan_past_aave_liquidations(from_block_num:u64, to_block_num:u64, web3: &Web3<Http>, aave_address:Address) -> Vec<Log>{
+async fn scan_past_aave_liquidations(from_block_num:u64, to_block_num:u64, web3: &Web3<WebSocket>, aave_address:Address) -> Vec<Log>{
     // println!("start");
 
     let filter = FilterBuilder::default().from_block(BlockNumber::from(from_block_num)).to_block(BlockNumber::from(to_block_num))
@@ -206,7 +205,7 @@ async fn scan_past_aave_liquidations(from_block_num:u64, to_block_num:u64, web3:
 
 }
 
-async fn get_asset_value_usd_at_timestamp(collateral_asset:Address,liquidation_collateral_amount:U256, web3:&Web3<Http>, block_timestamp:U256) -> U256{
+async fn get_asset_value_usd_at_timestamp(collateral_asset:Address,liquidation_collateral_amount:U256, web3:&Web3<WebSocket>, block_timestamp:U256) -> U256{
     // println!("getting price for {:?}", collateral_asset);
 
     let chainlink_feed_registery = Contract::from_json(
@@ -296,7 +295,7 @@ async fn get_asset_value_usd_at_timestamp(collateral_asset:Address,liquidation_c
     
 }
 
-async fn get_ERC20_asset_decimal(asset:Address, web3:&Web3<Http>, ) -> U256 {
+async fn get_ERC20_asset_decimal(asset:Address, web3:&Web3<WebSocket>, ) -> U256 {
 
     let token_contract = Contract::from_json(
         web3.eth(),
@@ -310,7 +309,7 @@ async fn get_ERC20_asset_decimal(asset:Address, web3:&Web3<Http>, ) -> U256 {
     decimal
 }
 
-async fn calculate_tx_gas_cost(web3:&Web3<Http>, tx_hash:H256, block_timestamp:U256 ) -> U256{
+async fn calculate_tx_gas_cost(web3:&Web3<WebSocket>, tx_hash:H256, block_timestamp:U256 ) -> U256{
     let tx_receipt = web3.eth().transaction_receipt(tx_hash).await.unwrap().unwrap();
 
     let gas_cost_wei = tx_receipt.gas_used.unwrap().checked_mul(tx_receipt.effective_gas_price.unwrap()).unwrap();
